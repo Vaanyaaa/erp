@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   LayoutDashboard,
   BookOpen,
@@ -33,6 +33,49 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+// ─────────────────────────────────────────────
+// USER SESSION TYPES & HOOK
+// Temporary: reads from sessionStorage set by SignupForm.
+// Replace with auth context / server session when backend is connected.
+// ─────────────────────────────────────────────
+interface UserSession {
+  fullName: string;
+  email: string;
+  role: string;
+  department?: string;
+  semester?: string;
+  program?: string;
+  enrollmentNo?: string;
+  employeeId?: string;
+  designation?: string;
+  relationship?: string;
+  childEnrollmentNo?: string;
+  mobileNumber?: string;
+}
+
+function useUser(): UserSession | null {
+  const [user, setUser] = useState<UserSession | null>(null);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("edusphere_user");
+      if (raw) setUser(JSON.parse(raw) as UserSession);
+    } catch {
+      // sessionStorage not available (SSR guard)
+    }
+  }, []);
+  return user;
+}
+
+// Helper: get initials from full name
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+}
 
 // ─────────────────────────────────────────────
 // TYPES
@@ -118,9 +161,11 @@ const quickAccessItems = [
 function TopHeader({
   onMenuToggle,
   sidebarOpen,
+  user,
 }: {
   onMenuToggle: () => void;
   sidebarOpen: boolean;
+  user: UserSession | null;
 }) {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b border-slate-200 bg-white px-4 shadow-sm">
@@ -183,17 +228,35 @@ function TopHeader({
         {/* Divider */}
         <div className="w-px h-6 bg-slate-200 mx-1" />
 
-        {/* User Avatar + Role */}
-        {/* Backend integration point: replace placeholder with authenticated user data */}
+        {/* User Avatar + Name */}
+        {/* Backend integration point: replace with authenticated user data from session/context */}
         <div className="flex items-center gap-2.5 cursor-pointer group">
-          {/* Avatar placeholder */}
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-300 to-slate-400 flex items-center justify-center ring-2 ring-white">
-            <User className="w-4 h-4 text-white" />
+          {/* Avatar: show initials if user data available */}
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center ring-2 ring-white shrink-0">
+            {user ? (
+              <span className="text-xs font-bold text-white">
+                {getInitials(user.fullName)}
+              </span>
+            ) : (
+              <User className="w-4 h-4 text-white" />
+            )}
           </div>
-          <div className="hidden sm:flex flex-col leading-none gap-1">
-            {/* Role label placeholder */}
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-2.5 w-14" />
+          <div className="hidden sm:flex flex-col leading-none gap-0.5">
+            {user ? (
+              <>
+                <span className="text-xs font-semibold text-slate-800 truncate max-w-[120px]">
+                  {user.fullName}
+                </span>
+                <span className="text-[10px] text-slate-400 capitalize">
+                  {user.role}
+                </span>
+              </>
+            ) : (
+              <>
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-2.5 w-14" />
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -274,7 +337,7 @@ function LeftSidebar({
 // WELCOME PANEL COMPONENT
 // Backend integration point: inject user profile, role, department, semester
 // ─────────────────────────────────────────────
-function WelcomePanel() {
+function WelcomePanel({ user }: { user: UserSession | null }) {
   const today = new Date().toLocaleDateString("en-IN", {
     weekday: "long",
     year: "numeric",
@@ -282,32 +345,57 @@ function WelcomePanel() {
     day: "numeric",
   });
 
+  // Resolve secondary label (dept, child enrollment, etc.)
+  const deptLabel =
+    user?.department ?? (user?.role === "parent" ? "Parent Portal" : undefined);
+
+  const semesterLabel =
+    user?.role === "student"
+      ? user.semester
+      : user?.role === "professor"
+      ? user.designation
+      : user?.role === "parent"
+      ? `Ward: ${user.childEnrollmentNo ?? "—"}`
+      : undefined;
+
   return (
     <div className="rounded-xl border border-blue-700 bg-gradient-to-r from-blue-600 to-blue-800 p-5 text-white shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="space-y-3">
-          {/* Welcome message placeholder */}
           <div>
             <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">
               Welcome back
             </p>
-            {/* Backend integration point: replace skeleton with user full name */}
-            <Skeleton className="h-6 w-48 bg-white/20 mb-1" />
+            {/* Name */}
+            {user ? (
+              <h1 className="text-xl font-bold text-white tracking-tight">
+                {user.fullName}
+              </h1>
+            ) : (
+              <Skeleton className="h-6 w-48 bg-white/20 mb-1" />
+            )}
+
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              {/* Role badge placeholder */}
+              {/* Role badge */}
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-xs font-medium">
                 <User className="w-3 h-3" />
-                Role: —
+                {user ? (
+                  <span className="capitalize">Role: {user.role}</span>
+                ) : (
+                  "Role: —"
+                )}
               </span>
-              {/* Department placeholder */}
+
+              {/* Department */}
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-xs font-medium">
                 <BookOpen className="w-3 h-3" />
-                Dept: —
+                {deptLabel ? `Dept: ${deptLabel}` : "Dept: —"}
               </span>
-              {/* Semester/Class placeholder */}
+
+              {/* Semester / Designation / Ward */}
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-xs font-medium">
                 <GraduationCap className="w-3 h-3" />
-                Semester: —
+                {semesterLabel ?? "Semester: —"}
               </span>
             </div>
           </div>
@@ -631,52 +719,42 @@ export default function DashboardPage() {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Temporary: reads user from sessionStorage set by SignupForm
+  // Backend integration point: replace with useSession() / auth context
+  const user = useUser();
+
   const handleNavClick = (id: string) => {
     setActiveNav(id);
-    setSidebarOpen(false); // close sidebar on mobile after nav
+    setSidebarOpen(false);
   };
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
-      {/* Top Header */}
       <TopHeader
         onMenuToggle={() => setSidebarOpen((v) => !v)}
         sidebarOpen={sidebarOpen}
+        user={user}
       />
 
-      {/* Left Sidebar */}
       <LeftSidebar
         activeNav={activeNav}
         onNavClick={handleNavClick}
         isOpen={sidebarOpen}
       />
 
-      {/* Main Content Area */}
       <main className="lg:pl-56 pt-14 min-h-screen">
         <div className="px-4 sm:px-6 py-6 max-w-screen-xl mx-auto space-y-5">
-
-          {/* Welcome Panel */}
-          <WelcomePanel />
-
-          {/* Overview Metric Cards */}
+          <WelcomePanel user={user} />
           <OverviewCards />
-
-          {/* Academic Section: Schedule + Attendance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <TodaysSchedule />
             <AttendanceOverview />
           </div>
-
-          {/* Notices + Activity */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <LatestNotices />
             <RecentActivity />
           </div>
-
-          {/* Quick Access Shortcuts */}
           <QuickAccess />
-
-          {/* Footer */}
           <Footer />
         </div>
       </main>
