@@ -1,467 +1,125 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
+import Link from "next/link";
 import {
-  LayoutDashboard,
-  BookOpen,
   ClipboardCheck,
-  Calendar,
-  FileText,
-  GraduationCap,
-  BarChart2,
-  CreditCard,
-  Library,
-  Bell,
-  HelpCircle,
-  User,
-  Settings,
-  HeadphonesIcon,
-  Search,
-  ChevronRight,
-  Menu,
-  X,
   Clock,
-  BookMarked,
-  CalendarDays,
+  FileText,
   Award,
-  Wallet,
-  BookCopy,
-  AlertCircle,
-  Activity,
-  FolderOpen,
+  Bell,
+  User,
+  MapPin,
+  Flame,
+  ChevronRight,
+  ArrowRight,
+  TrendingUp,
 } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  useUser,
+  StudentHeaderNav,
+  StudentProfileBanner,
+  StudentFooter,
+} from "@/components/dashboard/StudentHeader";
 
 // ─────────────────────────────────────────────
-// USER SESSION TYPES & HOOK
-// Temporary: reads from sessionStorage set by SignupForm.
-// Replace with auth context / server session when backend is connected.
+// OVERVIEW CARDS
 // ─────────────────────────────────────────────
-interface UserSession {
-  fullName: string;
-  email: string;
-  role: string;
-  department?: string;
-  semester?: string;
-  program?: string;
-  enrollmentNo?: string;
-  employeeId?: string;
-  designation?: string;
-  relationship?: string;
-  childEnrollmentNo?: string;
-  mobileNumber?: string;
-}
-
-function useUser(): UserSession | null {
-  const [user, setUser] = useState<UserSession | null>(null);
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem("edusphere_user");
-      if (raw) setUser(JSON.parse(raw) as UserSession);
-    } catch {
-      // sessionStorage not available (SSR guard)
-    }
-  }, []);
-  return user;
-}
-
-// Helper: get initials from full name
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((w) => w[0].toUpperCase())
-    .join("");
-}
-
-// ─────────────────────────────────────────────
-// TYPES
-// ─────────────────────────────────────────────
-interface NavItem {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-// ─────────────────────────────────────────────
-// NAVIGATION CONFIG
-// ─────────────────────────────────────────────
-const navItems: NavItem[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "courses", label: "Courses", icon: BookOpen },
-  { id: "attendance", label: "Attendance", icon: ClipboardCheck },
-  { id: "timetable", label: "Timetable", icon: Calendar },
-  { id: "assignments", label: "Assignments", icon: FileText },
-  { id: "examination", label: "Examination", icon: GraduationCap },
-  { id: "results", label: "Results", icon: BarChart2 },
-  { id: "fees", label: "Fees", icon: CreditCard },
-  { id: "library", label: "Library", icon: Library },
-  { id: "notices", label: "Notices", icon: Bell },
-  { id: "documents", label: "Documents", icon: FolderOpen },
-  { id: "profile", label: "Profile", icon: User },
-  { id: "settings", label: "Settings", icon: Settings },
-  { id: "support", label: "Support", icon: HeadphonesIcon },
-];
-
-// ─────────────────────────────────────────────
-// OVERVIEW CARD CONFIG
-// Backend integration point: replace empty values with fetched metric data
-// ─────────────────────────────────────────────
-const overviewCards = [
-  {
-    id: "courses",
-    title: "Enrolled Courses",
-    icon: BookCopy,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-100",
-  },
-  {
-    id: "attendance",
-    title: "Attendance Rate",
-    icon: ClipboardCheck,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    border: "border-emerald-100",
-  },
-  {
-    id: "assignments",
-    title: "Pending Assignments",
-    icon: FileText,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
-    border: "border-amber-100",
-  },
-  {
-    id: "results",
-    title: "Latest CGPA",
-    icon: Award,
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-    border: "border-violet-100",
-  },
-];
-
-// Quick access shortcut cards config
-const quickAccessItems = [
-  { id: "timetable", label: "Timetable", icon: Calendar, color: "text-blue-600", bg: "bg-blue-50" },
-  { id: "exams", label: "Exams", icon: GraduationCap, color: "text-violet-600", bg: "bg-violet-50" },
-  { id: "results", label: "Results", icon: BarChart2, color: "text-emerald-600", bg: "bg-emerald-50" },
-  { id: "fees", label: "Fees", icon: Wallet, color: "text-amber-600", bg: "bg-amber-50" },
-  { id: "library", label: "Library", icon: Library, color: "text-sky-600", bg: "bg-sky-50" },
-  { id: "support", label: "Support", icon: HeadphonesIcon, color: "text-rose-600", bg: "bg-rose-50" },
-];
-
-// ─────────────────────────────────────────────
-// TOP HEADER COMPONENT
-// ─────────────────────────────────────────────
-function TopHeader({
-  onMenuToggle,
-  sidebarOpen,
-  user,
-}: {
-  onMenuToggle: () => void;
-  sidebarOpen: boolean;
-  user: UserSession | null;
-}) {
-  return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex h-14 items-center border-b border-slate-200 bg-white px-4 shadow-sm">
-      {/* Logo + Brand */}
-      <div className="flex items-center gap-3 w-56 shrink-0">
-        {/* Mobile hamburger */}
-        <button
-          aria-label="Toggle sidebar"
-          onClick={onMenuToggle}
-          className="lg:hidden p-1.5 rounded-md text-slate-500 hover:bg-slate-100 transition-colors"
-        >
-          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-        </button>
-
-        {/* Institution logo placeholder */}
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shrink-0 shadow-sm">
-          <GraduationCap className="w-4 h-4 text-white" />
-        </div>
-
-        {/* Brand name */}
-        <div className="hidden sm:flex flex-col leading-none">
-          <span className="text-sm font-bold text-slate-800 tracking-tight">EduSphere</span>
-          <span className="text-[10px] text-slate-400 font-medium tracking-widest uppercase">ERP Portal</span>
-        </div>
-      </div>
-
-      {/* Global Search */}
-      <div className="flex-1 max-w-md mx-4 hidden md:block">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="search"
-            placeholder="Search students, courses, notices…"
-            aria-label="Global search"
-            className="w-full pl-9 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition"
-          />
-        </div>
-      </div>
-
-      {/* Right Actions */}
-      <div className="ml-auto flex items-center gap-1.5">
-        {/* Notification icon */}
-        <button
-          aria-label="Notifications"
-          className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-        >
-          <Bell className="w-4 h-4" />
-          {/* Notification dot — will show count from backend */}
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full border border-white" />
-        </button>
-
-        {/* Help icon */}
-        <button
-          aria-label="Help"
-          className="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
-        >
-          <HelpCircle className="w-4 h-4" />
-        </button>
-
-        {/* Divider */}
-        <div className="w-px h-6 bg-slate-200 mx-1" />
-
-        {/* User Avatar + Name */}
-        {/* Backend integration point: replace with authenticated user data from session/context */}
-        <div className="flex items-center gap-2.5 cursor-pointer group">
-          {/* Avatar: show initials if user data available */}
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center ring-2 ring-white shrink-0">
-            {user ? (
-              <span className="text-xs font-bold text-white">
-                {getInitials(user.fullName)}
-              </span>
-            ) : (
-              <User className="w-4 h-4 text-white" />
-            )}
-          </div>
-          <div className="hidden sm:flex flex-col leading-none gap-0.5">
-            {user ? (
-              <>
-                <span className="text-xs font-semibold text-slate-800 truncate max-w-[120px]">
-                  {user.fullName}
-                </span>
-                <span className="text-[10px] text-slate-400 capitalize">
-                  {user.role}
-                </span>
-              </>
-            ) : (
-              <>
-                <Skeleton className="h-3 w-20" />
-                <Skeleton className="h-2.5 w-14" />
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-// ─────────────────────────────────────────────
-// LEFT SIDEBAR COMPONENT
-// ─────────────────────────────────────────────
-function LeftSidebar({
-  activeNav,
-  onNavClick,
-  isOpen,
-}: {
-  activeNav: string;
-  onNavClick: (id: string) => void;
-  isOpen: boolean;
-}) {
-  return (
-    <>
-      {/* Overlay for mobile */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-30 bg-black/20 backdrop-blur-sm lg:hidden"
-          aria-hidden="true"
-        />
-      )}
-
-      <aside
-        className={cn(
-          "fixed top-14 bottom-0 left-0 z-40 w-56 flex flex-col bg-white border-r border-slate-200 transition-transform duration-200",
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        )}
-      >
-        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-0.5" aria-label="Main navigation">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeNav === item.id;
-            return (
-              <button
-                key={item.id}
-                id={`nav-${item.id}`}
-                onClick={() => onNavClick(item.id)}
-                className={cn(
-                  "group w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
-                  isActive
-                    ? "bg-blue-50 text-blue-700 shadow-sm"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "w-4 h-4 shrink-0 transition-colors",
-                    isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"
-                  )}
-                />
-                <span className="truncate">{item.label}</span>
-                {isActive && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500" />
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Sidebar footer — version */}
-        <div className="px-4 py-3 border-t border-slate-100">
-          <p className="text-[10px] text-slate-400 font-medium">EduSphere ERP v2.0.0</p>
-          <p className="text-[10px] text-slate-400">Academic Year: —</p>
-        </div>
-      </aside>
-    </>
-  );
-}
-
-// ─────────────────────────────────────────────
-// WELCOME PANEL COMPONENT
-// Backend integration point: inject user profile, role, department, semester
-// ─────────────────────────────────────────────
-function WelcomePanel({ user }: { user: UserSession | null }) {
-  const today = new Date().toLocaleDateString("en-IN", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  // Resolve secondary label (dept, child enrollment, etc.)
-  const deptLabel =
-    user?.department ?? (user?.role === "parent" ? "Parent Portal" : undefined);
-
-  const semesterLabel =
-    user?.role === "student"
-      ? user.semester
-      : user?.role === "professor"
-      ? user.designation
-      : user?.role === "parent"
-      ? `Ward: ${user.childEnrollmentNo ?? "—"}`
-      : undefined;
+function DashboardOverviewCards() {
+  const cards = [
+    {
+      id: "attendance",
+      title: "Attendance",
+      metric: "88.5%",
+      subtitle: "124 of 140 classes attended",
+      badge: "≥ 75% Target Satisfied",
+      badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      icon: ClipboardCheck,
+      iconBg: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+      progress: 88.5,
+      progressColor: "bg-emerald-600",
+      href: "/attendance",
+    },
+    {
+      id: "upcoming_classes",
+      title: "Upcoming Classes",
+      metric: "3 Classes",
+      subtitle: "Next: Cloud Computing at 10:30 AM",
+      badge: "Today's Schedule",
+      badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
+      icon: Clock,
+      iconBg: "bg-blue-50 text-blue-700 border border-blue-200",
+      progress: 50,
+      progressColor: "bg-blue-600",
+      href: "/timetable",
+    },
+    {
+      id: "assignments",
+      title: "Assignments",
+      metric: "2 Pending",
+      subtitle: "Next due: Data Structures Lab in 2 days",
+      badge: "14 Submitted",
+      badgeColor: "bg-amber-50 text-amber-700 border-amber-200",
+      icon: FileText,
+      iconBg: "bg-amber-50 text-amber-700 border border-amber-200",
+      progress: 87.5,
+      progressColor: "bg-amber-600",
+      href: "#",
+    },
+    {
+      id: "recent_results",
+      title: "Recent Results",
+      metric: "8.92 CGPA",
+      subtitle: "Sem 4 SGPA: 9.10 • Top 5% Rank",
+      badge: "Semester 5 Active",
+      badgeColor: "bg-violet-50 text-violet-700 border-violet-200",
+      icon: Award,
+      iconBg: "bg-violet-50 text-violet-700 border border-violet-200",
+      progress: 89.2,
+      progressColor: "bg-violet-600",
+      href: "/tpo",
+    },
+  ];
 
   return (
-    <div className="rounded-xl border border-blue-700 bg-gradient-to-r from-blue-600 to-blue-800 p-5 text-white shadow-sm">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div className="space-y-3">
-          <div>
-            <p className="text-blue-200 text-xs font-medium uppercase tracking-wider mb-1">
-              Welcome back
-            </p>
-            {/* Name */}
-            {user ? (
-              <h1 className="text-xl font-bold text-white tracking-tight">
-                {user.fullName}
-              </h1>
-            ) : (
-              <Skeleton className="h-6 w-48 bg-white/20 mb-1" />
-            )}
-
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              {/* Role badge */}
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-xs font-medium">
-                <User className="w-3 h-3" />
-                {user ? (
-                  <span className="capitalize">Role: {user.role}</span>
-                ) : (
-                  "Role: —"
-                )}
-              </span>
-
-              {/* Department */}
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-xs font-medium">
-                <BookOpen className="w-3 h-3" />
-                {deptLabel ? `Dept: ${deptLabel}` : "Dept: —"}
-              </span>
-
-              {/* Semester / Designation / Ward */}
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/15 border border-white/20 text-xs font-medium">
-                <GraduationCap className="w-3 h-3" />
-                {semesterLabel ?? "Semester: —"}
-              </span>
-            </div>
-          </div>
-
-          {/* Current date */}
-          <div className="flex items-center gap-1.5 text-blue-200 text-xs">
-            <CalendarDays className="w-3.5 h-3.5" />
-            <span>{today}</span>
-          </div>
-        </div>
-
-        {/* Action buttons — disabled placeholders */}
-        {/* Backend integration point: wire up to timetable/profile API */}
-        <div className="flex flex-col gap-2 sm:items-end">
-          <button
-            disabled
-            aria-disabled="true"
-            title="Available after backend integration"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white text-sm font-medium opacity-60 cursor-not-allowed"
-          >
-            <Calendar className="w-4 h-4" />
-            View Schedule
-          </button>
-          <button
-            disabled
-            aria-disabled="true"
-            title="Available after backend integration"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-medium opacity-60 cursor-not-allowed"
-          >
-            <User className="w-4 h-4" />
-            My Profile
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// OVERVIEW CARDS COMPONENT
-// Backend integration point: replace skeleton with fetched metrics
-// ─────────────────────────────────────────────
-function OverviewCards() {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-      {overviewCards.map((card) => {
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <div
+          <Link
             key={card.id}
-            className={cn(
-              "rounded-xl border bg-white p-4 shadow-sm hover:shadow-md transition-shadow",
-              card.border
-            )}
+            href={card.href}
+            className="group rounded-xl border border-slate-200 bg-white p-5 shadow-xs hover:border-slate-300 hover:shadow-sm transition-all duration-150 flex flex-col justify-between"
           >
-            <div className="flex items-start justify-between mb-3">
-              <div className={cn("p-2 rounded-lg", card.bg)}>
-                <Icon className={cn("w-5 h-5", card.color)} />
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", card.iconBg)}>
+                  <Icon className="w-4 h-4" />
+                </div>
+                <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-md border", card.badgeColor)}>
+                  {card.badge}
+                </span>
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-300" />
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{card.title}</p>
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight mt-1 group-hover:text-blue-700 transition-colors">
+                {card.metric}
+              </h2>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">{card.subtitle}</p>
             </div>
-            <p className="text-xs text-slate-500 font-medium mb-1">{card.title}</p>
-            {/* Backend integration point: replace skeleton with actual metric value */}
-            <Skeleton className="h-7 w-20 mb-2" />
-            <p className="text-[10px] text-slate-400">Data will appear here</p>
-          </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+              <div className="w-3/4 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className={cn("h-full rounded-full transition-all duration-300", card.progressColor)}
+                  style={{ width: `${card.progress}%` }}
+                />
+              </div>
+              <span className="text-xs font-semibold text-blue-700 group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                View <ChevronRight className="w-3.5 h-3.5" />
+              </span>
+            </div>
+          </Link>
         );
       })}
     </div>
@@ -469,295 +127,245 @@ function OverviewCards() {
 }
 
 // ─────────────────────────────────────────────
-// TODAY'S SCHEDULE COMPONENT
-// Backend integration point: replace empty state with timetable API data
+// TODAY'S SCHEDULE SECTION
 // ─────────────────────────────────────────────
-function TodaysSchedule() {
+function TodaysScheduleSection() {
+  const schedule = [
+    {
+      id: 1,
+      time: "09:00 AM – 10:30 AM",
+      subject: "Computer Networks & Security",
+      code: "IT501",
+      faculty: "Prof. Anil Verma",
+      room: "Room 402, Block B",
+      type: "Lecture",
+      status: "Completed",
+      statusColor: "bg-slate-100 text-slate-600 border-slate-200",
+    },
+    {
+      id: 2,
+      time: "10:45 AM – 12:15 PM",
+      subject: "Cloud Computing & Virtualization",
+      code: "IT502",
+      faculty: "Dr. Rajesh Sharma",
+      room: "Room 405, Block B",
+      type: "Lecture",
+      status: "Upcoming (Next)",
+      statusColor: "bg-blue-50 text-blue-700 border-blue-200 font-semibold",
+    },
+    {
+      id: 3,
+      time: "01:15 PM – 02:45 PM",
+      subject: "Database Management Systems Lab",
+      code: "IT503L",
+      faculty: "Prof. Sunita Mehra",
+      room: "Software Lab 3, 2nd Floor",
+      type: "Practical / Lab",
+      status: "Scheduled",
+      statusColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    },
+    {
+      id: 4,
+      time: "03:00 PM – 04:30 PM",
+      subject: "Software Engineering & Agile Methodologies",
+      code: "IT504",
+      faculty: "Dr. Priya Nair",
+      room: "Room 302, Block A",
+      type: "Lecture",
+      status: "Scheduled",
+      statusColor: "bg-slate-100 text-slate-600 border-slate-200",
+    },
+  ];
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-blue-500" />
-          <h2 className="text-sm font-semibold text-slate-800">Today&apos;s Schedule</h2>
+    <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center">
+            <Clock className="w-4 h-4 text-blue-700" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Today&apos;s Schedule</h2>
+            <p className="text-[11px] text-slate-500">Wednesday, Autumn Term 2025</p>
+          </div>
         </div>
-        <button
-          disabled
-          className="text-xs text-blue-500 font-medium opacity-50 cursor-not-allowed"
+        <Link
+          href="/timetable"
+          className="text-xs font-semibold text-blue-700 hover:text-blue-800 hover:underline flex items-center gap-0.5"
         >
-          View All
-        </button>
+          Full Timetable <ChevronRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
-      {/* Table header */}
-      <div className="grid grid-cols-3 gap-2 px-4 py-2 bg-slate-50 border-b border-slate-100 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
-        <span>Time</span>
-        <span>Subject</span>
-        <span>Room</span>
-      </div>
+      <div className="p-4 sm:p-5 space-y-3">
+        {schedule.map((item) => (
+          <div
+            key={item.id}
+            className="flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-lg border border-slate-200/80 bg-white hover:border-slate-300 transition-all gap-3"
+          >
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-slate-100 text-slate-700 flex flex-col items-center justify-center shrink-0 border border-slate-200 font-mono">
+                <span className="text-[8px] font-bold text-slate-400 uppercase">Period</span>
+                <span className="text-xs font-bold text-slate-800 leading-none">{item.id}</span>
+              </div>
 
-      {/* Empty state */}
-      <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
-        <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-          <Calendar className="w-5 h-5 text-slate-400" />
-        </div>
-        <p className="text-sm font-medium text-slate-500">No classes scheduled</p>
-        <p className="text-xs text-slate-400 mt-1">
-          {/* Backend integration point: timetable will populate this area */}
-          Timetable data will appear once connected
-        </p>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-slate-900">{item.subject}</span>
+                  <span className="text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">
+                    {item.code}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap">
+                  <span className="flex items-center gap-1 font-medium text-slate-700">
+                    <User className="w-3.5 h-3.5 text-slate-400" />
+                    {item.faculty}
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    {item.room}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex sm:flex-col items-center sm:items-end justify-between gap-1 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <span className="text-xs font-semibold text-slate-800 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                {item.time}
+              </span>
+              <span className={cn("text-[10px] px-2 py-0.5 rounded-md border", item.statusColor)}>
+                {item.status}
+              </span>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// ATTENDANCE OVERVIEW COMPONENT
-// Backend integration point: replace chart skeleton with real attendance data
+// RECENT NOTICES SECTION
 // ─────────────────────────────────────────────
-function AttendanceOverview() {
+function RecentNoticesSection() {
+  const notices = [
+    {
+      id: 1,
+      title: "Mid-Semester Examination Schedule - Autumn 2025 Announced",
+      category: "Examination",
+      categoryColor: "bg-violet-50 text-violet-700 border-violet-200",
+      date: "Aug 28, 2025",
+      isImportant: true,
+      description: "Theory & practical exam date sheet released. Hall tickets will be downloadable from student portal starting next Monday.",
+    },
+    {
+      id: 2,
+      title: "TPO Campus Drive: Microsoft & Amazon Summer Internship 2026",
+      category: "TPO / Placement",
+      categoryColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      date: "Aug 26, 2025",
+      isImportant: true,
+      description: "Eligible B.Tech IT & CSE 3rd Year students with CGPA ≥ 8.0 must register on the TPO portal before Sep 5.",
+    },
+    {
+      id: 3,
+      title: "Submission Deadline Extension for Mini Project Milestone 2",
+      category: "Academic",
+      categoryColor: "bg-blue-50 text-blue-700 border-blue-200",
+      date: "Aug 24, 2025",
+      isImportant: false,
+      description: "Department has extended project milestone submission by 3 days. Upload documentation directly to course repository.",
+    },
+    {
+      id: 4,
+      title: "Digital Library Access & IEEE Explore Resource Portal Update",
+      category: "Library",
+      categoryColor: "bg-amber-50 text-amber-700 border-amber-200",
+      date: "Aug 20, 2025",
+      isImportant: false,
+      description: "Off-campus proxy login credentials for IEEE, ACM, and Springer digital libraries have been updated for all enrolled students.",
+    },
+  ];
+
   return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <ClipboardCheck className="w-4 h-4 text-emerald-500" />
-          <h2 className="text-sm font-semibold text-slate-800">Attendance Overview</h2>
+    <div className="rounded-xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-100 flex items-center justify-center">
+            <Bell className="w-4 h-4 text-amber-700" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-slate-900">Recent Notices</h2>
+            <p className="text-[11px] text-slate-500">Official campus updates & circulars</p>
+          </div>
         </div>
-        <Badge variant="secondary">This Month</Badge>
+        <span className="text-xs font-semibold text-slate-500">
+          4 Circulars
+        </span>
       </div>
 
-      <div className="p-4 space-y-3">
-        {/* Chart placeholder */}
-        <div className="rounded-lg bg-slate-50 border border-slate-100 flex flex-col items-center justify-center py-6 gap-3">
-          <BarChart2 className="w-8 h-8 text-slate-300" />
-          <div className="space-y-1 text-center">
-            <p className="text-sm text-slate-400 font-medium">Chart Placeholder</p>
-            <p className="text-xs text-slate-400">
-              {/* Backend integration point: attendance chart renders here */}
-              Attendance analytics will appear here
+      <div className="p-4 sm:p-5 space-y-3">
+        {notices.map((notice) => (
+          <div
+            key={notice.id}
+            className="p-3.5 rounded-lg border border-slate-200/80 bg-white hover:border-slate-300 transition-all space-y-1.5"
+          >
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", notice.categoryColor)}>
+                  {notice.category}
+                </span>
+                {notice.isImportant && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">
+                    <Flame className="w-3 h-3 text-rose-600" />
+                    Important
+                  </span>
+                )}
+              </div>
+              <span className="text-[11px] text-slate-400 font-medium">{notice.date}</span>
+            </div>
+
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 hover:text-blue-700 transition-colors">
+              {notice.title}
+            </h3>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              {notice.description}
             </p>
           </div>
-          {/* Skeleton bars mimicking bar chart */}
-          <div className="flex items-end gap-1.5 h-12 mt-1">
-            {[40, 65, 55, 80, 45, 70, 60].map((h, i) => (
-              <Skeleton
-                key={i}
-                style={{ height: `${h}%` }}
-                className="w-5 rounded-sm"
-              />
-            ))}
-          </div>
-        </div>
-
-        {/* Legend skeletons */}
-        <div className="grid grid-cols-2 gap-2">
-          {["Present", "Absent"].map((label) => (
-            <div key={label} className="flex items-center gap-2 p-2 rounded-lg bg-slate-50">
-              <Skeleton className="w-2.5 h-2.5 rounded-full" />
-              <div>
-                <p className="text-[10px] text-slate-500">{label}</p>
-                <Skeleton className="h-3.5 w-10 mt-0.5" />
-              </div>
-            </div>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// LATEST NOTICES COMPONENT
-// Backend integration point: render notices from API response here
-// ─────────────────────────────────────────────
-function LatestNotices() {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <Bell className="w-4 h-4 text-amber-500" />
-          <h2 className="text-sm font-semibold text-slate-800">Latest Notices</h2>
-        </div>
-        <button
-          disabled
-          className="text-xs text-blue-500 font-medium opacity-50 cursor-not-allowed"
-        >
-          View All
-        </button>
-      </div>
-
-      {/* Empty state */}
-      <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <div className="relative mb-4">
-          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center border border-amber-100">
-            <Bell className="w-7 h-7 text-amber-400" />
-          </div>
-          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center border border-white">
-            <AlertCircle className="w-3 h-3 text-slate-400" />
-          </div>
-        </div>
-        <p className="text-sm font-semibold text-slate-600 mb-1">No notices to display</p>
-        <p className="text-xs text-slate-400 max-w-xs">
-          {/* Backend integration point: notices will appear once the API is connected */}
-          Official notices and announcements from your institution will appear here.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// RECENT ACTIVITY COMPONENT
-// Backend integration point: fetch and render user activity log
-// ─────────────────────────────────────────────
-function RecentActivity() {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <Activity className="w-4 h-4 text-violet-500" />
-          <h2 className="text-sm font-semibold text-slate-800">Recent Activity</h2>
-        </div>
-        <Badge variant="secondary">Today</Badge>
-      </div>
-
-      <div className="p-4">
-        <div className="flex flex-col items-center justify-center py-4 text-center">
-          <div className="w-10 h-10 rounded-full bg-violet-50 flex items-center justify-center mb-3 border border-violet-100">
-            <Activity className="w-5 h-5 text-violet-400" />
-          </div>
-          <p className="text-sm font-medium text-slate-500 mb-1">No recent activity</p>
-          <p className="text-xs text-slate-400 mb-4">
-            {/* Backend integration point: activity feed from API goes here */}
-            Your recent portal activity will appear here
-          </p>
-        </div>
-
-        {/* Skeleton activity rows */}
-        <div className="space-y-2.5">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="flex items-center gap-3 p-2.5 rounded-lg bg-slate-50 border border-slate-100">
-              <Skeleton className="w-7 h-7 rounded-full shrink-0" />
-              <div className="flex-1 space-y-1.5">
-                <Skeleton className="h-3 w-full" />
-                <Skeleton className="h-2.5 w-2/3" />
-              </div>
-              <Skeleton className="h-3 w-10 shrink-0" />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// QUICK ACCESS SECTION COMPONENT
-// These cards are UI-only shortcuts; wire up navigation on backend integration
-// ─────────────────────────────────────────────
-function QuickAccess() {
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
-        <BookMarked className="w-4 h-4 text-blue-500" />
-        <h2 className="text-sm font-semibold text-slate-800">Quick Access</h2>
-      </div>
-
-      <div className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {quickAccessItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.id}
-              id={`quick-access-${item.id}`}
-              aria-label={`Navigate to ${item.label}`}
-              className="group flex flex-col items-center gap-2 p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-slate-200 hover:shadow-sm transition-all duration-150 cursor-pointer"
-            >
-              <div
-                className={cn(
-                  "w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105",
-                  item.bg
-                )}
-              >
-                <Icon className={cn("w-5 h-5", item.color)} />
-              </div>
-              <span className="text-xs font-medium text-slate-600 group-hover:text-slate-900 transition-colors">
-                {item.label}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// FOOTER COMPONENT
-// Backend integration point: inject last login timestamp from session
-// ─────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer className="mt-2 flex flex-col sm:flex-row items-center justify-between gap-2 py-4 border-t border-slate-200 text-xs text-slate-400">
-      <div className="flex items-center gap-3">
-        <span>© 2026 EduSphere ERP</span>
-        <span className="w-px h-3 bg-slate-300" />
-        <span>Internal Academic Management System</span>
-      </div>
-      {/* Backend integration point: last login time from session/auth context */}
-      <div className="flex items-center gap-1.5">
-        <Clock className="w-3 h-3" />
-        <span>Last login: —</span>
-      </div>
-    </footer>
-  );
-}
-
-// ─────────────────────────────────────────────
-// MAIN DASHBOARD PAGE COMPONENT
+// DASHBOARD PAGE
 // ─────────────────────────────────────────────
 export default function DashboardPage() {
-  const [activeNav, setActiveNav] = useState("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  // Temporary: reads user from sessionStorage set by SignupForm
-  // Backend integration point: replace with useSession() / auth context
-  const user = useUser();
-
-  const handleNavClick = (id: string) => {
-    setActiveNav(id);
-    setSidebarOpen(false);
-  };
+  const { user, logout } = useUser();
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      <TopHeader
-        onMenuToggle={() => setSidebarOpen((v) => !v)}
-        sidebarOpen={sidebarOpen}
-        user={user}
-      />
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased flex flex-col">
+      <StudentHeaderNav user={user} onLogout={logout} />
 
-      <LeftSidebar
-        activeNav={activeNav}
-        onNavClick={handleNavClick}
-        isOpen={sidebarOpen}
-      />
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <StudentProfileBanner user={user} />
+        <DashboardOverviewCards />
 
-      <main className="lg:pl-56 pt-14 min-h-screen">
-        <div className="px-4 sm:px-6 py-6 max-w-screen-xl mx-auto space-y-5">
-          <WelcomePanel user={user} />
-          <OverviewCards />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <TodaysSchedule />
-            <AttendanceOverview />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-7">
+            <TodaysScheduleSection />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <LatestNotices />
-            <RecentActivity />
+          <div className="lg:col-span-5">
+            <RecentNoticesSection />
           </div>
-          <QuickAccess />
-          <Footer />
         </div>
       </main>
+
+      <StudentFooter user={user} />
     </div>
   );
 }
