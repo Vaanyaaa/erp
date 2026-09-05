@@ -11,12 +11,8 @@ import {
   Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  useUser,
-  StudentHeaderNav,
-  StudentProfileBanner,
-  StudentFooter,
-} from "@/components/dashboard/StudentHeader";
+import { useUser } from "@/components/dashboard/StudentHeader";
+import { AppShell } from "@/components/layout/AppShell";
 
 interface SubjectAttendance {
   id: string;
@@ -108,11 +104,8 @@ export default function AttendancePage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased flex flex-col">
-      <StudentHeaderNav user={user} onLogout={logout} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <StudentProfileBanner user={user} />
+    <AppShell>
+      <div className="px-6 py-6 max-w-6xl mx-auto space-y-6">
 
         {/* Top Summary Banner */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
@@ -311,9 +304,7 @@ export default function AttendancePage() {
             </table>
           </div>
         </div>
-      </main>
-
-      <StudentFooter user={user} />
-    </div>
+      </div>
+    </AppShell>
   );
 }

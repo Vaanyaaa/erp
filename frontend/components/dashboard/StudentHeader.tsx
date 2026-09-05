@@ -17,6 +17,7 @@ import {
   CalendarDays,
   User,
   ShieldCheck,
+  Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,9 @@ export interface UserSession {
   relationship?: string;
   childEnrollmentNo?: string;
   mobileNumber?: string;
+  studentId?: string;
+  academicSession?: string;
+  academicStatus?: string;
 }
 
 export const DEFAULT_DEMO_STUDENT: UserSession = {
@@ -45,6 +49,9 @@ export const DEFAULT_DEMO_STUDENT: UserSession = {
   year: "3rd Year",
   semester: "5th Semester",
   enrollmentNo: "ST10293",
+  studentId: "ST10293",
+  academicSession: "2025–2026 (Autumn Term)",
+  academicStatus: "Good Standing · Examination Eligible",
 };
 
 export function useUser(): { user: UserSession | null; logout: () => void } {
@@ -100,6 +107,7 @@ export function StudentHeaderNav({
     { href: "/attendance", label: "Attendance", icon: ClipboardCheck },
     { href: "/timetable", label: "Time Table", icon: Calendar },
     { href: "/tpo", label: "TPO", icon: Briefcase },
+    { href: "/notices", label: "Notices", icon: Newspaper },
   ];
 
   return (

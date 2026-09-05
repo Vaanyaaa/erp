@@ -19,12 +19,8 @@ import {
   Filter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  useUser,
-  StudentHeaderNav,
-  StudentProfileBanner,
-  StudentFooter,
-} from "@/components/dashboard/StudentHeader";
+import { useUser } from "@/components/dashboard/StudentHeader";
+import { AppShell } from "@/components/layout/AppShell";
 
 interface PlacementDrive {
   id: string;
@@ -184,11 +180,8 @@ export default function TPOPage() {
       : QUIZ_QUESTIONS.filter((q) => q.category === quizFilter);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 antialiased flex flex-col">
-      <StudentHeaderNav user={user} onLogout={logout} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
-        <StudentProfileBanner user={user} />
+    <AppShell>
+      <div className="px-6 py-6 max-w-6xl mx-auto space-y-8">
 
         {/* TPO Overview Stats Banner */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-xs">
@@ -527,9 +520,7 @@ export default function TPOPage() {
             </div>
           )}
         </div>
-      </main>
-
-      <StudentFooter user={user} />
-    </div>
+      </div>
+    </AppShell>
   );
 }
