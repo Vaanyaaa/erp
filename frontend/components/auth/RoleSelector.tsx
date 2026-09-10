@@ -1,19 +1,19 @@
 "use client";
 
 import React from "react";
-import { GraduationCap, UserCheck, Users, CheckCircle } from "lucide-react";
+import { GraduationCap, BookOpen, Users, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type RoleType = "student" | "professor" | "parent";
 
-interface RoleOption {
+export interface RoleOption {
   id: RoleType;
   title: string;
   description: string;
   icon: React.ComponentType<{ className?: string }>;
 }
 
-const roles: RoleOption[] = [
+export const ROLES: RoleOption[] = [
   {
     id: "student",
     title: "Student",
@@ -21,16 +21,16 @@ const roles: RoleOption[] = [
     icon: GraduationCap,
   },
   {
-    id: "professor",
-    title: "Professor",
-    description: "Manage classes, post assignments & grades",
-    icon: UserCheck,
-  },
-  {
     id: "parent",
     title: "Parent",
     description: "Monitor child's academic progress & fee status",
     icon: Users,
+  },
+  {
+    id: "professor",
+    title: "Professor",
+    description: "Manage classes, post assignments & grades",
+    icon: BookOpen,
   },
 ];
 
@@ -46,7 +46,7 @@ export function RoleSelector({ selectedRole, onSelectRole }: RoleSelectorProps) 
         Select Institutional Role
       </label>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {roles.map((role) => {
+        {ROLES.map((role) => {
           const Icon = role.icon;
           const isSelected = selectedRole === role.id;
           return (

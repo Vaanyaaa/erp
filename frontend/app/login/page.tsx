@@ -10,8 +10,9 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <AuthLayout subtitleText="Internal Academic Management Portal">
-      <LoginFormConnected />
+    <AuthLayout hideHeader>
+      {/* Backend integration point: pass onSubmit prop to LoginForm when auth provider is ready */}
+      <LoginForm />
     </AuthLayout>
   );
 }
