@@ -111,6 +111,7 @@ export function SignupForm({ onSubmit, externalError }: SignupFormProps) {
   // Form state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   const strength = getPasswordStrength(password);
 
@@ -153,6 +154,7 @@ export function SignupForm({ onSubmit, externalError }: SignupFormProps) {
     if (!isFormValid || isSubmitting) return;
 
     setIsSubmitting(true);
+    setSubmitError("");
 
     const payload: SignupPayload = {
       role,
@@ -195,9 +197,14 @@ export function SignupForm({ onSubmit, externalError }: SignupFormProps) {
             payload.role === "parent" ? payload.childEnrollmentNo : undefined,
           mobileNumber: payload.mobileNumber,
         };
-        sessionStorage.setItem("edusphere_user", JSON.stringify(userSession));
+        sessionStorage.setItem("acadex_user", JSON.stringify(userSession));
         router.push("/dashboard");
       }
+    } catch (err: unknown) {
+      // A failed registration must not fall through to the dashboard.
+      setSubmitError(
+        err instanceof Error ? err.message : "Could not create the account."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -220,12 +227,12 @@ export function SignupForm({ onSubmit, externalError }: SignupFormProps) {
       )}
 
       {/* External error banner */}
-      {externalError && !successMessage && (
+      {(externalError || submitError) && !successMessage && (
         <div
           role="alert"
           className="flex items-center gap-2 p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700"
         >
-          <span>{externalError}</span>
+          <span>{externalError || submitError}</span>
         </div>
       )}
 

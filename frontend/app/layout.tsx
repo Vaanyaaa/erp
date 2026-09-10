@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,10 +14,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EduSphere ERP | Internal Academic Management System",
+  title: "Acadex | Internal Academic Management System",
   description:
-    "EduSphere ERP is a professional internal portal for students, faculty, and administrators of educational institutions.",
-  keywords: ["ERP", "education", "academic management", "student portal", "EduSphere"],
+    "Acadex is a professional internal portal for students, faculty, and administrators of educational institutions.",
+  keywords: ["ERP", "education", "academic management", "student portal", "Acadex"],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-50">{children}</body>
+      <body className="min-h-full bg-slate-50">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

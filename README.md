@@ -1,4 +1,4 @@
-# EduSphere ERP Project Repository
+# Acadex Project Repository
 
 Internal Academic Management System repository containing separate **Frontend** and **Backend** folders.
 

@@ -3,75 +3,68 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
-const { sequelize } = require("./models");
+const { sequelize, usePostgres } = require("./config/database");
+require("./models");
 
-const authRoutes = require("./routes/authRoutes");
-const noticeRoutes = require("./routes/noticeRoutes");
-const questionBankRoutes = require("./routes/questionBankRoutes");
-const ocrRoutes = require("./routes/ocrRoutes");
-const calendarRoutes = require("./routes/calendarRoutes");
+const authRoutes = require("./routes/auth.routes");
+const noticeRoutes = require("./routes/notices.routes");
+const tpcellRoutes = require("./routes/tpcell.routes");
+const calendarRoutes = require("./routes/calendar.routes");
+const documentRoutes = require("./routes/documents.routes");
+const academicRoutes = require("./routes/academics.routes");
+const materialRoutes = require("./routes/materials.routes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Serve uploaded files (scanned question papers, etc.) statically so the
-// frontend can link/display them directly.
+app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+app.use(express.json({ limit: "2mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
-// Health Check
+// Health Check Endpoint
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    service: "EduSphere ERP API Backend",
+    service: "Acadex API Backend",
+    database: usePostgres ? "postgres" : "sqlite",
     timestamp: new Date().toISOString(),
   });
 });
 
-// Route groups
 app.use("/api/auth", authRoutes);
 app.use("/api/notices", noticeRoutes);
-app.use("/api/question-bank", questionBankRoutes);
-app.use("/api/ocr", ocrRoutes);
+app.use("/api/tpcell", tpcellRoutes);
 app.use("/api/calendar", calendarRoutes);
+app.use("/api/documents", documentRoutes);
+app.use("/api/academics", academicRoutes);
+app.use("/api/materials", materialRoutes);
 
-// 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: "Route not found." });
+  res.status(404).json({ message: `No endpoint at ${req.method} ${req.originalUrl}` });
 });
 
-// Central error handler (catches multer errors, unhandled throws, etc.)
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error("Unhandled error:", err);
-  res.status(err.status || 500).json({
-    message: err.message || "Something went wrong.",
-  });
+  res.status(500).json({ message: "Something went wrong on the server." });
 });
 
 async function start() {
-  try {
-    await sequelize.authenticate();
-    console.log("✅ Database connection established.");
-
-    // sync({ alter: true }) auto-updates tables to match the models below —
-    // convenient for a hackathon/early-stage build. Once this is in
-    // production with real data, switch to proper migrations instead
-    // (e.g. umzug or sequelize-cli) so schema changes don't risk data loss.
-    await sequelize.sync({ alter: true });
-    console.log("✅ Database synced.");
-
-    app.listen(PORT, () => {
-      console.log(`🚀 EduSphere ERP Backend running on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error("❌ Unable to start server:", err);
-    process.exit(1);
-  }
+  await sequelize.authenticate();
+  // Plain sync only creates missing tables. `alter: true` looks convenient but
+  // on SQLite it rebuilds tables through a backup copy and silently drops
+  // association foreign keys, which wipes seeded relationships on every boot.
+  await sequelize.sync();
+  console.log(`Database ready (${usePostgres ? "postgres" : "sqlite"})`);
+  app.listen(PORT, () => {
+    console.log(`Acadex Backend Server running on port ${PORT}`);
+  });
 }
 
-start();
+if (require.main === module) {
+  start().catch((err) => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  });
+}
 
-module.exports = app;
+module.exports = { app, start };

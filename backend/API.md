@@ -1,146 +1,84 @@
-# API Reference
+# Acadex — API Reference
 
-Base URL (local dev): `http://localhost:5000/api`
+Base URL: `http://localhost:5000/api`
 
-All protected routes require: `Authorization: Bearer <token>`
+Every endpoint except `/health`, `/auth/login` and `/auth/register` needs a
+bearer token:
 
----
+```
+Authorization: Bearer <token>
+```
+
+Roles are `student`, `professor`, `parent` and `tp_admin`. The permission column
+below is enforced by middleware, not by per-route checks.
 
 ## Auth
 
-### POST `/auth/register`
-No auth required.
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/auth/register` | anyone | Accepts the payload `SignupForm` already builds, including its `studentDept` / `profDept` field names. Returns `{ token, user }`. |
+| POST | `/auth/login` | anyone | Body `{ identifier, password }`. `identifier` is an email **or** an enrollment number. |
+| GET | `/auth/me` | any signed-in | Restores a session after a page refresh. |
 
-```json
-{
-  "role": "student",
-  "fullName": "Aarav Sharma",
-  "email": "aarav@edusphere.edu",
-  "mobileNumber": "9999900002",
-  "password": "password123",
-  "enrollmentNo": "EN2026-001",
-  "studentDept": "Computer Science",
-  "program": "B.Tech CS",
-  "semester": "Semester VII"
-}
-```
-Role-specific fields:
-- `student`: `enrollmentNo`, `studentDept`, `program`, `semester`
-- `professor` / `tp_admin`: `employeeId`, `profDept`, `designation`
-- `parent`: `childEnrollmentNo` (must match an already-registered student), `relationship`
+## Notices
 
-Returns `{ token, user }`.
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/notices?category=&limit=` | any | Categories: `general`, `tp_cell`, `exam`, `fees`, `emergency`. |
+| GET | `/notices/:id` | any | |
+| POST | `/notices/draft` | professor, tp_admin | Body `{ prompt, category? }`. Turns one sentence into an editable draft. Saves nothing. |
+| POST | `/notices` | professor, tp_admin | `category: "tp_cell"` is rejected for anyone but `tp_admin`. |
+| DELETE | `/notices/:id` | author or tp_admin | |
 
-### POST `/auth/login`
-```json
-{ "identifier": "aarav@edusphere.edu", "password": "password123" }
-```
-Returns `{ token, user }`.
+## TP Cell
 
-### GET `/auth/me`
-Auth required. Returns the logged-in user's full profile.
-
----
-
-## Notices (TP Cell + general)
-
-### POST `/notices`
-Roles: `tp_admin`, `professor`
-```json
-{ "title": "Google Drive — Registration Open", "body": "...", "category": "tp_cell" }
-```
-`category` is `"tp_cell"` or `"general"`.
-
-### GET `/notices`
-Any authenticated user. Optional query: `?category=tp_cell&limit=20`
-
-### GET `/notices/:id`
-### DELETE `/notices/:id`
-Only the original poster or a `tp_admin`.
-
----
-
-## Question Bank
-
-### POST `/question-bank/companies`
-Roles: `tp_admin`
-```json
-{ "name": "Google", "description": "Product-based" }
-```
-
-### GET `/question-bank/companies`
-Any authenticated user.
-
-### POST `/question-bank/questions`
-Roles: `tp_admin`
-```json
-{
-  "companyId": "<uuid>",
-  "year": 2025,
-  "type": "dsa",
-  "difficulty": "medium",
-  "topic": "Arrays",
-  "title": "Two Sum variant",
-  "content": "Given an array, find all pairs summing to a target."
-}
-```
-`type`: `dsa` | `aptitude` | `hr` | `other`
-`difficulty`: `easy` | `medium` | `hard`
-
-### GET `/question-bank/questions`
-Any authenticated user. Filters (all optional, combinable):
-`?companyId=&year=&difficulty=&topic=&type=`
-
-### DELETE `/question-bank/questions/:id`
-Roles: `tp_admin`
-
-### POST `/question-bank/assemble-test`
-Any authenticated user. Pulls from the vetted question bank — does not generate new questions with AI, to avoid ever showing an incorrect hallucinated question.
-```json
-{ "companyId": "<uuid>", "difficulty": "mixed", "counts": { "easy": 4, "medium": 4, "hard": 2 } }
-```
-or for a single difficulty level:
-```json
-{ "companyId": "<uuid>", "difficulty": "easy", "totalQuestions": 10 }
-```
-
----
-
-## OCR
-
-### POST `/ocr/extract`
-Any authenticated user. `multipart/form-data` with field name `file` (PNG/JPG/JPEG/WEBP — PDFs not yet supported, see README).
-
-Returns:
-```json
-{ "fileName": "...", "filePath": "/uploads/...", "extractedText": "...", "confidence": 93 }
-```
-
----
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/tpcell/companies` | any | Each company includes a `questionCount`. |
+| POST | `/tpcell/companies` | tp_admin | |
+| GET | `/tpcell/questions` | any | Filters: `companyId`, `year`, `difficulty`, `type`, `topic`, `search`. Sorted newest year first, then easy → medium → hard. |
+| POST | `/tpcell/questions` | professor, tp_admin | |
+| DELETE | `/tpcell/questions/:id` | tp_admin | |
+| POST | `/tpcell/tests/generate` | any | Body `{ companyId?, totalQuestions?, mix?, type?, topic? }`. Assembles a paper from the existing bank — it does not invent questions. |
 
 ## Calendar
 
-### POST `/calendar`
-Roles: `tp_admin`, `professor`
-```json
-{ "title": "Google Pre-Placement Talk", "eventDate": "2026-09-08", "eventType": "company_visit", "description": "Auditorium, 10 AM" }
-```
-`eventType`: `company_visit` | `seminar` | `deadline` | `exam` | `other`
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/calendar/week?start=YYYY-MM-DD` | any | Returns seven pre-bucketed days, so the UI needs no date maths. |
+| GET | `/calendar/upcoming?limit=` | any | |
+| POST | `/calendar` | professor, tp_admin | |
+| DELETE | `/calendar/:id` | professor, tp_admin | |
 
-### GET `/calendar/week`
-Any authenticated user. Optional `?start=YYYY-MM-DD` (any date within the target week — defaults to current week).
+## Documents / OCR
 
-### DELETE `/calendar/:id`
-Roles: `tp_admin`, `professor`
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/documents/ocr` | any | `multipart/form-data`, field name `file`. Images up to 10 MB. Returns raw text plus a best-effort `structured.rows` table of label → value. |
+| GET | `/documents` | any | The caller's own read history. |
+| GET | `/documents/:id` | owner | Full extracted text. |
 
----
+OCR runs fully offline. `eng.traineddata` is bundled in `backend/tessdata`, so
+Tesseract never downloads a language model at runtime.
 
-## Error format
+## Academics
 
-All errors return `{ "message": "..." }` with an appropriate HTTP status:
-- `400` — missing/invalid fields
-- `401` — no/invalid token, or wrong credentials
-- `403` — valid token, but role not permitted for this action
-- `404` — resource not found
-- `409` — conflict (e.g. duplicate email)
-- `500` — unexpected server error (includes `error` field with details in dev)
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET | `/academics/summary` | any | The four overview cards. Students see their own record, parents see their ward's, staff see institution-wide counts. |
+| GET | `/academics/attendance` | any | Overall percentage plus a per-course breakdown. |
+| GET | `/academics/fees` | any | Items plus paid / outstanding totals. |
+| GET | `/academics/courses` | any | |
+| GET | `/academics/timetable` | any | Full week. |
+| GET | `/academics/timetable/today` | any | |
+| GET | `/academics/activity` | any | The caller's recent actions. |
+
+## Errors
+
+Every failure returns `{ "message": "..." }` with a real status code:
+
+- `400` — something is missing or malformed
+- `401` — no token, or an expired one
+- `403` — signed in, but the role isn't allowed
+- `404` — no such record
+- `409` — duplicate (email already registered, company already listed)

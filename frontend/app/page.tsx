@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "EduSphere ERP | Internal Academic Management System",
+  title: "Acadex | Internal Academic Management System",
   description:
-    "EduSphere ERP is a unified internal portal for students, professors, parents, and administrators of educational institutions.",
+    "Acadex is a unified internal portal for students, professors, parents, and administrators of educational institutions.",
 };
 
 const features = [
@@ -61,7 +61,7 @@ export default function HomePage() {
               <GraduationCap className="w-4 h-4 text-white" />
             </div>
             <div className="flex flex-col leading-none">
-              <span className="text-sm font-bold text-slate-800 tracking-tight">EduSphere ERP</span>
+              <span className="text-sm font-bold text-slate-800 tracking-tight">Acadex</span>
               <span className="text-[10px] text-slate-400 uppercase tracking-widest font-medium">Academic Portal</span>
             </div>
           </div>
@@ -97,8 +97,7 @@ export default function HomePage() {
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            EduSphere{" "}
-            <span className="text-blue-600">ERP</span>
+            Acadex
           </h1>
           <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto leading-relaxed">
             A unified internal academic management system for students, professors, parents, and administrators.
@@ -155,7 +154,7 @@ export default function HomePage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-5 text-center text-xs text-slate-400">
-        © 2026 EduSphere ERP · Internal Academic Management System · Authorized users only
+        © 2026 Acadex · Internal Academic Management System · Authorized users only
       </footer>
     </div>
   );

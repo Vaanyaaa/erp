@@ -124,7 +124,7 @@ export function LoginForm({ onSubmit, externalError }: LoginFormProps) {
               setIdentifier(e.target.value);
               if (identifierError) setIdentifierError("");
             }}
-            placeholder="s10293@edusphere.edu or user@edusphere.edu"
+            placeholder="s10293@acadex.edu or user@acadex.edu"
             autoComplete="username"
             className={cn(
               "w-full rounded-lg border bg-slate-50 px-3.5 py-2.5 pl-10 text-sm text-slate-800 placeholder:text-slate-400",

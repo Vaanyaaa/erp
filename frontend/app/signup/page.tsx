@@ -1,18 +1,17 @@
 import { AuthLayout } from "@/components/auth/AuthLayout";
-import { SignupForm } from "@/components/auth/SignupForm";
+import { SignupFormConnected } from "@/components/auth/SignupFormConnected";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Create Account | EduSphere ERP",
+  title: "Create Account | Acadex",
   description:
-    "Register for the EduSphere ERP internal academic management portal as a student, professor, or parent.",
+    "Register for the Acadex internal academic management portal as a student, professor, or parent.",
 };
 
 export default function SignupPage() {
   return (
     <AuthLayout subtitleText="Internal Academic Management System • Account Registration">
-      {/* Backend integration point: pass onSubmit prop to SignupForm when auth provider is ready */}
-      <SignupForm />
+      <SignupFormConnected />
     </AuthLayout>
   );
 }

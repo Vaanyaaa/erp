@@ -26,7 +26,7 @@ export function AuthLayout({ children, subtitleText = "Internal Academic Managem
                 <GraduationCap className="w-6 h-6 text-blue-200" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight text-white">EduSphere ERP</span>
+                <span className="text-xl font-bold tracking-tight text-white">Acadex</span>
                 <span className="text-[11px] text-blue-200/80 uppercase tracking-widest font-medium">Academic Portal</span>
               </div>
             </Link>
@@ -65,7 +65,7 @@ export function AuthLayout({ children, subtitleText = "Internal Academic Managem
 
           {/* Bottom Footer Info */}
           <div className="relative z-10 border-t border-white/10 pt-4 flex items-center justify-between text-[11px] text-blue-200/60">
-            <span>© 2026 EduSphere ERP</span>
+            <span>© 2026 Acadex</span>
             <span>v2.0.0 (Build 402)</span>
           </div>
         </div>
@@ -79,10 +79,10 @@ export function AuthLayout({ children, subtitleText = "Internal Academic Managem
                 <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
                   <GraduationCap className="w-4.5 h-4.5 text-white" />
                 </div>
-                <span className="text-lg font-bold text-slate-800">EduSphere ERP</span>
+                <span className="text-lg font-bold text-slate-800">Acadex</span>
               </div>
               <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
-                EduSphere ERP
+                Acadex
               </h2>
               <p className="text-xs text-slate-500 font-medium">{subtitleText}</p>
             </div>

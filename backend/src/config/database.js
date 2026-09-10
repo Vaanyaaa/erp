@@ -1,29 +1,28 @@
+const path = require("path");
 const { Sequelize } = require("sequelize");
 
-// Works with ANY Postgres provider — local, Supabase, Neon, Railway, RDS —
-// just point DATABASE_URL at whichever one you're using. Nothing else changes.
-//
-// Local example:    postgresql://postgres:devpassword@localhost:5432/edusphere_erp
-// Supabase example: postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
-// Neon example:     postgresql://[user]:[password]@[endpoint].neon.tech/[dbname]?sslmode=require
+/**
+ * Zero-config by default: if DATABASE_URL is not set, we fall back to a local
+ * SQLite file so the project runs with `npm run dev` and nothing else installed.
+ * Set DATABASE_URL to a Postgres connection string (Supabase / Neon / local)
+ * and the exact same models/queries run on Postgres — no code changes.
+ */
+const databaseUrl = process.env.DATABASE_URL;
+const usePostgres = Boolean(databaseUrl && databaseUrl.startsWith("postgres"));
 
-const isProduction = process.env.NODE_ENV === "production";
-const connectionString =
-  process.env.DATABASE_URL ||
-  "postgresql://postgres:devpassword@localhost:5432/edusphere_erp";
+const sequelize = usePostgres
+  ? new Sequelize(databaseUrl, {
+      dialect: "postgres",
+      logging: false,
+      dialectOptions:
+        process.env.DB_SSL === "true"
+          ? { ssl: { require: true, rejectUnauthorized: false } }
+          : {},
+    })
+  : new Sequelize({
+      dialect: "sqlite",
+      storage: path.join(__dirname, "..", "..", "acadex.sqlite"),
+      logging: false,
+    });
 
-// Most hosted Postgres providers (Supabase, Neon, Railway) require SSL in
-// production but reject self-signed cert verification unless relaxed like this.
-const dialectOptions =
-  isProduction || connectionString.includes("sslmode=require")
-    ? { ssl: { require: true, rejectUnauthorized: false } }
-    : {};
-
-const sequelize = new Sequelize(connectionString, {
-  dialect: "postgres",
-  dialectOptions,
-  logging: isProduction ? false : console.log,
-  pool: { max: 10, min: 0, acquire: 30000, idle: 10000 },
-});
-
-module.exports = sequelize;
+module.exports = { sequelize, usePostgres };
