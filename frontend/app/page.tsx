@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "EduSphere ERP | Internal Academic Management System",
+  title: "Acadex | Internal Academic Management System",
   description:
-    "EduSphere ERP is a unified internal portal for students, professors, parents, and administrators of educational institutions.",
+    "Acadex is a unified internal portal for students, professors, parents, and administrators of educational institutions.",
 };
 
 const features = [
